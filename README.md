@@ -6,12 +6,12 @@ Built with Streamlit, OpenAI, and SendGrid.
 
 ## 🧩 Features
 
-📝 Planner Agent – designs multiple distinct web searches.
-🌐 Search Agent – performs concise, multi-perspective searches.
-✒️ Writer Agent – synthesizes findings into a detailed Markdown report.
-📧 Email Agent – converts reports to HTML and sends via SendGrid.
-⚡ Async Execution – performs searches in parallel for speed.
-🖥️ Streamlit UI – simple and elegant interface for interaction.
+- 📝 Planner Agent – designs multiple distinct web searches.
+- 🌐 Search Agent – performs concise, multi-perspective searches.
+- ✒️ Writer Agent – synthesizes findings into a detailed Markdown report.
+- 📧 Email Agent – converts reports to HTML and sends via SendGrid.
+- ⚡ Async Execution – performs searches in parallel for speed.
+- 🖥️ Streamlit UI – simple and elegant interface for interaction.
 
 
 
