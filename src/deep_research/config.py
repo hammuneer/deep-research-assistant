@@ -36,7 +36,3 @@ class Config:
 
     # Email
     SENDER_EMAIL: str = os.getenv("SENDER_EMAIL", "")
-
-
-# Create a global config instance
-config = Config()

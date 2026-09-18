@@ -11,12 +11,20 @@ end-to-end research workflow:
 """
 
 import asyncio
-from agents import Runner, trace, gen_trace_id
-from user_agents.search_agent import search_agent
-from user_agents.planner_agent import planner_agent, WebSearchItem, WebSearchPlan
-from user_agents.writer_agent import writer_agent, ReportData
-from user_agents.email_agent import email_agent
-from user_agents.email_agent import send_email
+import logging
+import re
+
+from agents import Runner, gen_trace_id, trace
+
+from deep_research.agents.email_agent import email_agent
+from deep_research.agents.planner_agent import WebSearchItem, WebSearchPlan, planner_agent
+from deep_research.agents.search_agent import search_agent
+from deep_research.agents.writer_agent import ReportData, writer_agent
+
+logger = logging.getLogger(__name__)
+
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
 
 class ResearchManager:
     """Coordinates the multi-step research process."""
@@ -33,29 +41,25 @@ class ResearchManager:
         """
         trace_id = gen_trace_id()
         with trace("Research trace", trace_id=trace_id):
-            print(
-                f"View trace: https://platform.openai.com/traces/trace?trace_id={trace_id}"
-            )
-            yield (
-                f"View trace: https://platform.openai.com/traces/trace?trace_id={trace_id}"
-            )
+            trace_url = f"https://platform.openai.com/traces/trace?trace_id={trace_id}"
+            logger.info("View trace: %s", trace_url)
+            yield f"View trace: {trace_url}"
 
-            print("Starting research...")
+            logger.info("Starting research for query: %r", query)
             search_plan = await self.plan_searches(query)
-            # print("Printing Search Plan for Debugging: \n\n", search_plan)
             yield "Searches planned, starting to search..."
             search_results = await self.perform_searches(search_plan)
-            # print("Printing Search Results for Debugging: \n\n", search_results)
             yield "Searches complete, writing report..."
             report = await self.write_report(query, search_results)
-            # print("Printing report for Debugging: \n\n", report)
             yield "Report written, sending email..."
 
-            if  search_plan.receiver_email:
-                receiver_email = search_plan.receiver_email
-                # print("Printing receiver_email for Debugging: \n\n", receiver_email)
+            receiver_email = search_plan.receiver_email
+            if receiver_email and EMAIL_PATTERN.match(receiver_email):
                 await self.send_email(receiver_email, report)
                 yield "Email sent, research complete"
+            elif receiver_email:
+                logger.warning("Skipping email send: %r is not a valid email address", receiver_email)
+                yield "Skipping email send: the extracted address didn't look valid"
             else:
                 yield "Skipping email send, as not required..."
 
@@ -71,10 +75,11 @@ class ResearchManager:
         Returns:
             WebSearchPlan: The search plan with queries and optional email info.
         """
-        print("Planning searches...")
+        logger.info("Planning searches...")
         result = await Runner.run(planner_agent, f"Query: {query}")
-        print(f"Will perform {len(result.final_output.searches)} searches")
-        return result.final_output_as(WebSearchPlan)
+        plan = result.final_output_as(WebSearchPlan)
+        logger.info("Will perform %d searches", len(plan.searches))
+        return plan
 
     async def perform_searches(self, search_plan: WebSearchPlan) -> list[str]:
         """
@@ -86,7 +91,7 @@ class ResearchManager:
         Returns:
             list[str]: Summaries of the search results.
         """
-        print("Searching...")
+        logger.info("Searching...")
         tasks = [asyncio.create_task(self.search(item)) for item in search_plan.searches]
         results: list[str] = []
 
@@ -94,9 +99,9 @@ class ResearchManager:
             result = await task
             if result:
                 results.append(result)
-            print(f"Searching... {i}/{len(tasks)} completed")
+            logger.info("Searching... %d/%d completed", i, len(tasks))
 
-        print("Finished searching")
+        logger.info("Finished searching")
         return results
 
     async def search(self, item: WebSearchItem) -> str | None:
@@ -114,6 +119,7 @@ class ResearchManager:
             result = await Runner.run(search_agent, input_text)
             return str(result.final_output)
         except Exception:
+            logger.exception("Search failed for term: %r", item.query)
             return None
 
     async def write_report(self, query: str, search_results: list[str]) -> ReportData:
@@ -127,12 +133,10 @@ class ResearchManager:
         Returns:
             ReportData: The generated report data.
         """
-        print("Thinking about report...")
-        input_text = (
-            f"Original query: {query}\nSummarized search results: {search_results}"
-        )
+        logger.info("Thinking about report...")
+        input_text = f"Original query: {query}\nSummarized search results: {search_results}"
         result = await Runner.run(writer_agent, input_text)
-        print("Finished writing report")
+        logger.info("Finished writing report")
         return result.final_output_as(ReportData)
 
     async def send_email(self, receiver_email: str, report: ReportData) -> None:
@@ -143,15 +147,12 @@ class ResearchManager:
             receiver_email (str): The recipient email address.
             report (ReportData): The generated report to send.
         """
-        print("Writing email...")
-
+        logger.info("Writing email...")
         input_text = f"""
         Receiver email: {receiver_email}
         Subject: Research Report on requested topic
         Report:
         {report.markdown_report}
         """
-
         await Runner.run(email_agent, input_text)
-        # send_email(receiver_email, "Research Report on requested topic", report.markdown_report)
-        print("Email sent")
+        logger.info("Email sent")

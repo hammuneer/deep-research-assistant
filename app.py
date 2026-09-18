@@ -7,14 +7,10 @@ status updates and the final report.
 """
 
 import asyncio
+
 import streamlit as st
-from dotenv import load_dotenv
 
-from research_manager import ResearchManager
-
-
-# Load environment variables from .env (local dev convenience)
-load_dotenv(override=True)
+from deep_research.research_manager import ResearchManager
 
 # Configure Streamlit page
 st.set_page_config(
@@ -91,6 +87,7 @@ if st.button("🚀 Run Deep Research", type="primary"):
         with st.spinner("🤖 Running deep research... this may take a while."):
             result: str = asyncio.run(process())
 
-        # Render result
+        # Render result. This is Markdown, not HTML, and part of it is derived from live
+        # web search results, so we deliberately don't pass unsafe_allow_html=True here.
         st.markdown("## 📊 Research Report")
-        st.markdown(result, unsafe_allow_html=True)
+        st.markdown(result)

@@ -6,7 +6,7 @@ and produces a concise summary of the results.
 """
 
 from agents import Agent, WebSearchTool, ModelSettings
-from config import Config
+from deep_research.config import Config
 
 
 # Search agent instructions
