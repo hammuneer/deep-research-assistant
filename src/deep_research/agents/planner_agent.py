@@ -6,10 +6,12 @@ whether the user intends to send the final report via email.
 """
 
 from datetime import datetime
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 from agents import Agent
-from config import Config
+from deep_research.config import Config
 
 
 # Constants
@@ -66,15 +68,15 @@ class WebSearchPlan(BaseModel):
 
     Attributes:
         searches (list[WebSearchItem]): List of planned web searches.
-        send_email (bool): True if the user intends to send an email.
-        email_to_send (str): Extracted email address, or None if not provided.
+        receiver_email (Optional[str]): Extracted email address, or None if not provided.
     """
 
     searches: list[WebSearchItem] = Field(
         description="A list of web searches to perform to best answer the query."
     )
-    receiver_email: str = Field(
-        description="Extracted email from the user query, or None if not provided."
+    receiver_email: Optional[str] = Field(
+        default=None,
+        description="Extracted email from the user query, or null if not provided.",
     )
 
 

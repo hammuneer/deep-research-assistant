@@ -1,0 +1,33 @@
+[project]
+name = "deep-research-assistant"
+version = "0.1.0"
+description = "A multi-agent research pipeline: plans web searches, gathers diverse perspectives, writes a long-form report, and optionally emails it via SendGrid."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "Hamza Munir" }]
+dependencies = [
+    "streamlit>=1.38,<2",
+    "python-dotenv>=1.0,<2",
+    "pydantic>=2.7,<3",
+    "sendgrid>=6.11,<7",
+    "openai-agents>=0.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.6"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+src = ["src"]

@@ -5,17 +5,17 @@ Defines the SendGrid-powered email sending tool and wraps it in an Agent
 that formats research reports into HTML emails.
 """
 
+import logging
 from typing import Dict
-import ssl, certifi, sendgrid
-from sendgrid.helpers.mail import Email, Mail, Content, To
+
+import sendgrid
+from sendgrid.helpers.mail import Content, Email, Mail, To
 
 from agents import Agent, function_tool
-from config import Config
-import ssl
-import urllib3
+from deep_research.config import Config
 
-urllib3.disable_warnings()
-ssl._create_default_https_context = ssl._create_unverified_context
+logger = logging.getLogger(__name__)
+
 
 @function_tool
 def send_email(receiver_email: str, subject: str, html_body: str) -> Dict[str, str]:
@@ -31,17 +31,15 @@ def send_email(receiver_email: str, subject: str, html_body: str) -> Dict[str, s
         dict: A dictionary with the status of the operation.
     """
     sg = sendgrid.SendGridAPIClient(api_key=Config.SENDGRID_API_KEY)
-    # Patch urllib3 to use certifi CA bundle
-    
+
     from_email = Email(Config.SENDER_EMAIL)  # verified sender
     to_email = To(receiver_email)
     content = Content("text/html", html_body)
 
-    # Build and send the message
     mail = Mail(from_email, to_email, subject, content).get()
     response = sg.client.mail.send.post(request_body=mail)
 
-    print("Email response", response.status_code)
+    logger.info("Email response status: %s", response.status_code)
     return {"status": "success"}
 
 

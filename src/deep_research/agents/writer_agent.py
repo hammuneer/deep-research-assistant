@@ -13,7 +13,7 @@ The report should:
 
 from pydantic import BaseModel, Field
 from agents import Agent
-from config import Config
+from deep_research.config import Config
 
 
 # Writer agent instructions
